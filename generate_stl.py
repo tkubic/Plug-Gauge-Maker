@@ -3,6 +3,8 @@ import subprocess
 import pandas as pd
 from tkinter import Tk, Radiobutton, StringVar, Button, Label
 from tkinter.filedialog import askopenfilename
+from concurrent.futures import ThreadPoolExecutor
+import uuid
 
 # Define the OpenSCAD template file and the output directory
 template_file = 'template.scad'
@@ -70,8 +72,8 @@ def generate_stl(plug_diameter, plug_handle_length, plug_overall_length, output_
     scad_content = scad_content.replace('PLUG_HANDLE_LENGTH', str(plug_handle_length))
     scad_content = scad_content.replace('PLUG_OVERALL_LENGTH', str(plug_overall_length))
 
-    # Write the modified content to a temporary OpenSCAD file
-    temp_scad_file = 'temp.scad'
+    # Generate a unique temporary OpenSCAD file name
+    temp_scad_file = f'temp_{uuid.uuid4().hex}.scad'
     with open(temp_scad_file, 'w') as file:
         file.write(scad_content)
 
@@ -84,6 +86,22 @@ def generate_stl(plug_diameter, plug_handle_length, plug_overall_length, output_
     # Remove the temporary OpenSCAD file
     os.remove(temp_scad_file)
 
+def process_row(index, row):
+    plug_diameter = row['plug_diameter']
+    plug_handle_length = row['plug_handle_length']
+    plug_overall_length = row['plug_overall_length']
+
+    # Check if any value is NaN
+    if pd.isna(plug_diameter) or pd.isna(plug_handle_length) or pd.isna(plug_overall_length):
+        print(f"Skipping row {index + 1} due to NaN values in sheet '{selected_sheet}'.")
+        return
+    
+    # Define the output STL file name based on the parameter values
+    output_file = os.path.join(output_dir, f'{plug_diameter}_{plug_handle_length}_{plug_overall_length}.stl')
+    
+    # Generate the STL file
+    generate_stl(plug_diameter, plug_handle_length, plug_overall_length, output_file)
+
 # Read the specified worksheet from the Excel file
 df = pd.read_excel(excel_file, sheet_name=selected_sheet, usecols=[0, 1, 2], skiprows=2, header=None, names=["plug_diameter", "plug_handle_length", "plug_overall_length"])
 
@@ -91,21 +109,8 @@ df = pd.read_excel(excel_file, sheet_name=selected_sheet, usecols=[0, 1, 2], ski
 print(f"DataFrame read from sheet '{selected_sheet}':")
 print(df)
 
-# Iterate over the rows in the DataFrame and generate STL files
-for index, row in df.iterrows():
-    plug_diameter = row['plug_diameter']
-    plug_handle_length = row['plug_handle_length']
-    plug_overall_length = row['plug_overall_length']
-    
-    # Check if any value is NaN
-    if pd.isna(plug_diameter) or pd.isna(plug_handle_length) or pd.isna(plug_overall_length):
-        print(f"Skipping row {index + 1} due to NaN values in sheet '{selected_sheet}'.")
-        continue
-    
-    # Define the output STL file name based on the parameter values
-    output_file = os.path.join(output_dir, f'{plug_diameter}_{plug_handle_length}_{plug_overall_length}.stl')
-    
-    # Generate the STL file
-    generate_stl(plug_diameter, plug_handle_length, plug_overall_length, output_file)
+# Use ThreadPoolExecutor to parallelize the processing of rows
+with ThreadPoolExecutor() as executor:
+    list(executor.map(lambda row: process_row(*row), df.iterrows()))
 
 print(f'STL files have been generated in the {output_dir} directory')
