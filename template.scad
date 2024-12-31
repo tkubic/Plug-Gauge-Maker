@@ -1,4 +1,4 @@
-$fn = 25; // number of facets for cylinders
+$fn = 75; // number of facets for cylinders
 
 // Plug Diameter
 plug_diameter = PLUG_DIAMETER; // in inches
@@ -13,10 +13,10 @@ lip_threshold = 0.25; // in inches
 holder_standoff_length = 1; // extra standoff length in inches
 cube_width = ceil((plug_diameter + 0.8) * 2) / 2 * 25.4; 
 cube_height = ceil((plug_diameter + 0.8) * 2) / 2 * 25.4;
-cube_depth = (plug_overall_length - plug_handle_length + holder_standoff_length) * 25.4; // convert to mm
+cube_depth = 6*25.4;//(plug_overall_length - plug_handle_length + holder_standoff_length) * 25.4; // convert to mm
 
 // Define the diameter of the hole
-hole_clearance = 0.025; // in inches
+hole_clearance = 0.075; // in inches
 hole_diameter_mm = (plug_diameter + hole_clearance) * 25.4; // convert to mm
 
 // Define the chamfer parameters
@@ -52,11 +52,11 @@ module create_cube_with_chamfered_hole_and_lip() {
         difference() {
             // Create the main lip cylinder
             translate([0, 0, -cube_depth / 2])
-                cylinder(h = cube_depth - (plug_overall_length - plug_handle_length) * 25.4, d = hole_diameter_mm);
+                cylinder(h = cube_depth - (plug_overall_length - plug_handle_length+1) * 25.4, d = hole_diameter_mm);
             
             // Subtract the inner cylinder to create the lip
             translate([0, 0, -cube_depth / 2])
-                cylinder(h = cube_depth - (plug_overall_length - plug_handle_length) * 25.4, d = hole_diameter_mm - lip_size_mm);
+                cylinder(h = cube_depth - (plug_overall_length - plug_handle_length+1) * 25.4, d = hole_diameter_mm - lip_size_mm);
         }
     }
 }
