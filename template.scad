@@ -1,6 +1,13 @@
-$fn = 75; // number of facets for cylinders
+/* [Accuracy Settings] */
+// Define fragment angle and size 
+// number of facets for cylinders
+//$fn = 75;
+// Minimum angle for each fragment 
+$fa = 3; 
+// Minimum size for each fragment
+$fs = .1; 
 
-
+/* [Plug Size] */
 
 // Plug Diameter
 plug_diameter = PLUG_DIAMETER; // in inches
@@ -9,41 +16,49 @@ plug_handle_length = PLUG_HANDLE_LENGTH; // in inches
 // Plug overall length
 plug_overall_length = PLUG_OVERALL_LENGTH; // in inches
 
-
 /*
 // Plug Diameter
-plug_diameter = .075; // in inches
+plug_diameter = 1.75; // in inches
 // Plug handle length
 plug_handle_length = 2; // in inches
 // Plug overall length
 plug_overall_length = 3; // in inches
 */
 
+/* [Lip Parameters] */
 lip_size = 0.1; // in inches
 lip_threshold = 0.25; // in inches
 
-// Define the dimensions of the cube
+
+// extra standoff length in inches
 holder_standoff_length = 1; // extra standoff length in inches
+// Define the dimensions of the cube
 cube_width = ceil((plug_diameter + 0.8) * 2) / 2 * 25.4; 
 cube_height = ceil((plug_diameter + 0.8) * 2) / 2 * 25.4;
 cube_depth = 6*25.4;//(plug_overall_length - plug_handle_length + holder_standoff_length) * 25.4; // convert to mm
 
-// Define the diameter of the hole
+
 hole_clearance = 0.075; // in inches
+// Define the diameter of the hole
 hole_diameter_mm = (plug_diameter + hole_clearance) * 25.4; // convert to mm
 
+/* [Chamfer Parameters] */
 // Define the chamfer parameters
 chamfer_width = 4; // 4 mm larger than the hole radius
 chamfer_angle = 45; // Chamfer angle in degrees
 chamfer_depth = chamfer_width * tan(chamfer_angle); // Depth of the chamfer in mm
 chamfer_r2 = (hole_diameter_mm / 2) + chamfer_width; // r2 is 4 mm larger than the hole radius
 
+/* [Magnet Parameters] */
 // Define the magnet size. Width, Thickness, Height
 Magnet_size_small = [10,5,65]; // bar magnet
-//Magnet_size_small = [.75 * 25.4, .25 * 25.4, .75 * 25.4]; // d=.5" 1/4" thick
+//Clearance for magnet (width, thickness, depth)
+magnet_clearance = [1,0,3]; //clearance for magnet
+mc = magnet_clearance;
+//Magnet distance from the edge
+edge_distance = 3; //distance from the edge
 
-
-// Create the cube
+/* [Hidden] */
 cube_size = [cube_width, cube_height, cube_depth];
 cube_center = [0, 0, 0];
 
@@ -62,14 +77,14 @@ module create_cube_with_chamfered_hole_and_lip() {
             cylinder(h = chamfer_depth, r1 = hole_diameter_mm / 2, r2 = chamfer_r2, center = false);
 
         // Add the slot to the bottom of the cube
-        translate([0, -cube_height/2+Magnet_size_small[1]/2+3, -cube_depth / 2+Magnet_size_small[2]/2+1.5])
-            cube([Magnet_size_small[0]+1,Magnet_size_small[1],Magnet_size_small[2]+3], center = true);
+        translate([0, -cube_height/2+Magnet_size_small[1]/2+edge_distance, -cube_depth/2+Magnet_size_small[2]/2+mc[2]/2-.01])
+            cube([Magnet_size_small[0]+mc[1],Magnet_size_small[1],Magnet_size_small[2]+mc[2]], center = true);
     }
     
     // Add the lip if plug_diameter is greater than 0.25 inches
     if (plug_diameter > lip_threshold) {
         lip_size_mm = lip_size * 25.4; // height of the lip in mm
-        lip_diameter = (plug_diameter - 0.25) * 25.4; // diameter of the lip in mm
+        //lip_diameter = (plug_diameter - 0.25) * 25.4; // diameter of the lip in mm
         
         difference() {
             // Create the main lip cylinder
