@@ -61,6 +61,10 @@ mc = magnet_clearance;
 //Magnet distance from the edge
 edge_distance = 3; //distance from the edge
 
+/* [Interlock Parameters] */
+// Interlock hole size
+interlock_hole_size = 5; // in mm
+
 /* [Hidden] */
 // Define the dimensions of the cube
 cube_width = max(hole_diameter_mm + chamfer_width * 2 + 5, 25);
@@ -105,8 +109,18 @@ module create_cube_with_chamfered_hole_and_lip() {
     }
 }
 
-// Generate the cube with the chamfered hole and lip
-create_cube_with_chamfered_hole_and_lip();
+
+
+
+// Add the interlock hole
+module add_interlock_hole() {
+    translate([0, 0, 8-cube_depth/2])
+        rotate([90, 0, 0])
+            cylinder(h = cube_height+5, d = interlock_hole_size, center = true);
+    translate([0, 0, cube_depth/2-8])
+        rotate([90, 0, 0])
+            cylinder(h = cube_height+5, d = interlock_hole_size, center = true);
+}
 
 // Add text to the top of the cube
 module add_text_to_top() {
@@ -122,5 +136,12 @@ module add_text_to_top() {
             text(text_value, size = text_size, valign = "center", halign = "center", font = text_font);
 }
 
-// Call the module to add the text
-add_text_to_top();
+
+// Combine the modules
+difference() {
+    union() {
+        create_cube_with_chamfered_hole_and_lip();
+        add_text_to_top();
+    }
+    add_interlock_hole();
+}
