@@ -9,14 +9,12 @@ $fs = .1;
 
 /* [Plug Size] */
 
-
 // Plug Diameter
 plug_diameter = PLUG_DIAMETER; // in inches
 // Plug handle length
 plug_handle_length = PLUG_HANDLE_LENGTH; // in inches
 // Plug overall length
 plug_overall_length = PLUG_OVERALL_LENGTH; // in inches
-
 
 /*
 // Plug Diameter
@@ -64,6 +62,9 @@ edge_distance = 3; //distance from the edge
 /* [Interlock Parameters] */
 // Interlock hole size
 interlock_hole_size = 5; // in mm
+// User input for the number of holes and spacing
+num_holes = 6; // Number of holes
+hole_spacing = 22; // Spacing between holes in mm
 
 /* [Hidden] */
 // Define the dimensions of the cube
@@ -109,17 +110,13 @@ module create_cube_with_chamfered_hole_and_lip() {
     }
 }
 
-
-
-
 // Add the interlock hole
 module add_interlock_hole() {
-    translate([0, 0, 8-cube_depth/2])
-        rotate([90, 0, 0])
-            cylinder(h = cube_height+5, d = interlock_hole_size, center = true);
-    translate([0, 0, cube_depth/2-8])
-        rotate([90, 0, 0])
-            cylinder(h = cube_height+5, d = interlock_hole_size, center = true);
+    for (i = [0 : num_holes - 1]) {
+        translate([0, 0, 20 - cube_depth / 2 + i * hole_spacing])
+            rotate([90, 0, 0])
+                cylinder(h = cube_height + 5, d = interlock_hole_size, center = true);
+    }
 }
 
 // Add text to the top of the cube
