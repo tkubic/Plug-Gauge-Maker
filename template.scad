@@ -10,20 +10,11 @@ $fs = .1;
 /* [Plug Size] */
 
 // Plug Diameter
-plug_diameter = PLUG_DIAMETER; // in inches
-// Plug handle length
-plug_handle_length = PLUG_HANDLE_LENGTH; // in inches
-// Plug overall length
-plug_overall_length = PLUG_OVERALL_LENGTH; // in inches
-
-/*
-// Plug Diameter
 plug_diameter = .782; // in inches
 // Plug handle length
-plug_handle_length = 2; // in inches
+plug_handle_length = 2.0123; // in inches
 // Plug overall length
-plug_overall_length = 3; // in inches
-*/
+plug_overall_length = 3.0123; // in inches
 
 /* [Lip Parameters] */
 lip_size = 0.2; // in inches
@@ -33,6 +24,8 @@ lip_threshold = 0.5; // in inches
 text_thickness = 0.6; // height of the text in mm
 text_size = 6; // size of the text
 text_font = "Arial Rounded MT Bold:style=Regular"; // specify the font
+use_input_text = false; // Set to true to use input text, false to use formula
+input_text_value = "Custom Text"; // Input text value
 
 // extra standoff length in inches
 holder_standoff_length = 1; // extra standoff length in inches
@@ -51,8 +44,11 @@ chamfer_depth = chamfer_width * tan(chamfer_angle); // Depth of the chamfer in m
 chamfer_r2 = (hole_diameter_mm / 2) + chamfer_width; // r2 is 4 mm larger than the hole radius
 
 /* [Magnet Parameters] */
+// Option to include the slot to the bottom of the cube
+include_slot = false; // Set to true to include the slot, false to exclude
+
 // Define the magnet size. Width, Thickness, Height
-Magnet_size_small = [10,5,65]; // bar magnet
+Magnet_size_small = [25.4,6.35,25.4]; // bar magnet
 //Clearance for magnet (width, thickness, depth)
 magnet_clearance = [1,0,3]; //clearance for magnet
 mc = magnet_clearance;
@@ -88,9 +84,11 @@ module create_cube_with_chamfered_hole_and_lip() {
         translate([0, 0, cube_depth / 2 - chamfer_depth])
             cylinder(h = chamfer_depth, r1 = hole_diameter_mm / 2, r2 = chamfer_r2, center = false);
 
-        // Add the slot to the bottom of the cube
-        translate([0, -cube_height/2+Magnet_size_small[1]/2+edge_distance, -cube_depth/2+Magnet_size_small[2]/2+mc[2]/2-.01])
-            cube([Magnet_size_small[0]+mc[1],Magnet_size_small[1],Magnet_size_small[2]+mc[2]], center = true);
+        // Add the slot to the bottom of the cube if include_slot is true
+        if (include_slot) {
+            translate([0, -cube_height/2+Magnet_size_small[1]/2+edge_distance, -cube_depth/2+Magnet_size_small[2]/2+mc[2]/2-.01])
+                cube([Magnet_size_small[0]+mc[1],Magnet_size_small[1],Magnet_size_small[2]+mc[2]], center = true);
+        }
     }
     
     // Add the lip if plug_diameter is greater than 0.25 inches
@@ -123,9 +121,10 @@ module add_interlock_hole() {
 module add_text_to_top() {
     // Define the text parameters
     plug_diameter_str = str(plug_diameter*10000);
-    text_value = (plug_diameter < .1) ? str(".0", plug_diameter_str) : 
-    ((plug_diameter < 1) ? str(".", plug_diameter_str):
-    str(plug_diameter));
+    text_value = use_input_text ? input_text_value : 
+        (plug_diameter < .1) ? str(".0", plug_diameter_str) : 
+        ((plug_diameter < 1) ? str(".", plug_diameter_str) : 
+        str(plug_diameter));
 
     // Position the text on top of the cube
     translate([0, -cube_height / 2 + text_size / 2 +1, cube_depth / 2])
@@ -133,6 +132,21 @@ module add_text_to_top() {
             text(text_value, size = text_size, valign = "center", halign = "center", font = text_font);
 }
 
+/* [Dovetail Parameters] */
+dovetail_width = 50; // Width of the dovetail in mm
+dovetail_height = 10; // Height of the dovetail in mm
+
+module create_dovetail() {
+    translate([cube_width/2, -cube_height / 2+dovetail_height, 0])
+        rotate([180, 90, 0])
+            linear_extrude(height = cube_width)
+                polygon(points=[
+                    [0, 0],
+                    [dovetail_width, 0],
+                    [dovetail_width - dovetail_height, dovetail_height],
+                    [-dovetail_height, dovetail_height]
+                ]);
+}
 
 // Combine the modules
 difference() {
@@ -141,4 +155,5 @@ difference() {
         add_text_to_top();
     }
     add_interlock_hole();
+    create_dovetail();
 }

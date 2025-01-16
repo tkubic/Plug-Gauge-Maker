@@ -68,9 +68,9 @@ def generate_stl(plug_diameter, plug_handle_length, plug_overall_length, output_
     print(f"Generating STL with: plug_diameter={plug_diameter}, plug_handle_length={plug_handle_length}, plug_overall_length={plug_overall_length}")
 
     # Replace placeholders with actual values
-    scad_content = scad_content.replace('PLUG_DIAMETER', str(plug_diameter))
-    scad_content = scad_content.replace('PLUG_HANDLE_LENGTH', str(plug_handle_length))
-    scad_content = scad_content.replace('PLUG_OVERALL_LENGTH', str(plug_overall_length))
+    scad_content = scad_content.replace('.782', str(plug_diameter))
+    scad_content = scad_content.replace('2.0123', str(plug_handle_length))
+    scad_content = scad_content.replace('3.0123', str(plug_overall_length))
 
     # Generate a unique temporary OpenSCAD file name
     temp_scad_file = f'temp_{uuid.uuid4().hex}.scad'
