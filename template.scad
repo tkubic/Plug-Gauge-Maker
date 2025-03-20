@@ -30,8 +30,6 @@ input_text_value = "Custom Text"; // Input text value
 // extra standoff length in inches
 holder_standoff_length = 1; // extra standoff length in inches
 
-
-
 hole_clearance = .075; // in inches
 // Define the diameter of the hole
 hole_diameter_mm = (plug_diameter + hole_clearance) * 25.4; // convert to mm
@@ -61,6 +59,14 @@ interlock_hole_size = 5; // in mm
 // User input for the number of holes and spacing
 num_holes = 6; // Number of holes
 hole_spacing = 22; // Spacing between holes in mm
+
+/* [Bowtie Parameters] */
+// Option to include the additional bowtie
+include_additional_bowtie = false; // Set to true to include the additional bowtie
+bowtie_width_top = 28; // Top width of the bowtie in mm
+bowtie_width_bottom = 20; // Bottom width of the bowtie in mm
+bowtie_height = 12; // Height of the bowtie in mm
+bowtie_depth = 3; // Depth of the bowtie cutout in mm
 
 /* [Hidden] */
 // Define the dimensions of the cube
@@ -148,6 +154,61 @@ module create_dovetail() {
                 ]);
 }
 
+// Add bowtie cutout
+module add_bowtie_cutout() {
+    translate([cube_width / 2 - bowtie_depth, cube_height/2-bowtie_height/2, 0])
+        rotate([90, 90, 90])
+            linear_extrude(height = bowtie_depth)
+                polygon(points=[
+                    [-bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_bottom / 2, bowtie_height / 2],
+                    [bowtie_width_top/2, bowtie_height*1.5],
+                    [-bowtie_width_top/2, bowtie_height*1.5],
+                    [-bowtie_width_bottom / 2, bowtie_height / 2]
+                ]); 
+                
+    translate([cube_width / 2 - bowtie_depth, -cube_height/2-bowtie_height/2, 0])
+        rotate([90, 90, 90])
+            linear_extrude(height = bowtie_depth)
+                polygon(points=[
+                    [-bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_bottom / 2, bowtie_height / 2],
+                    [bowtie_width_top/2, bowtie_height*1.5],
+                    [-bowtie_width_top/2, bowtie_height*1.5],
+                    [-bowtie_width_bottom / 2, bowtie_height / 2]
+                ]); 
+                
+    translate([-cube_width / 2 , cube_height/2-bowtie_height/2, 0])
+        rotate([90, 90, 90])
+            linear_extrude(height = bowtie_depth)
+                polygon(points=[
+                    [-bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_bottom / 2, bowtie_height / 2],
+                    [bowtie_width_top/2, bowtie_height*1.5],
+                    [-bowtie_width_top/2, bowtie_height*1.5],
+                    [-bowtie_width_bottom / 2, bowtie_height / 2]
+                ]); 
+                
+    translate([-cube_width / 2, -cube_height/2-bowtie_height/2, 0])
+        rotate([90, 90, 90])
+            linear_extrude(height = bowtie_depth)
+                polygon(points=[
+                    [-bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_bottom / 2, bowtie_height / 2],
+                    [bowtie_width_top/2, bowtie_height*1.5],
+                    [-bowtie_width_top/2, bowtie_height*1.5],
+                    [-bowtie_width_bottom / 2, bowtie_height / 2]
+                ]);                  
+                
+
+}
+
+
+
 // Combine the modules
 difference() {
     union() {
@@ -155,5 +216,20 @@ difference() {
         add_text_to_top();
     }
     add_interlock_hole();
-    create_dovetail();
+    add_bowtie_cutout();
+    //create_dovetail();
+}
+
+// Add the additional bowtie if include_additional_bowtie is true
+if (include_additional_bowtie) {
+    translate([cube_width / 2 + 25, cube_height / 2 - bowtie_height / 2, 0])
+            linear_extrude(height = bowtie_depth)
+                polygon(points=[
+                    [-bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_top / 2, -bowtie_height / 2],
+                    [bowtie_width_bottom / 2, bowtie_height / 2],
+                    [bowtie_width_top / 2, bowtie_height * 1.5],
+                    [-bowtie_width_top / 2, bowtie_height * 1.5],
+                    [-bowtie_width_bottom / 2, bowtie_height / 2]
+                ]);
 }
