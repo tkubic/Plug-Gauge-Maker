@@ -63,16 +63,15 @@ hole_spacing = 22; // Spacing between holes in mm
 /* [Bowtie Parameters] */
 // Option to include the additional bowtie
 include_additional_bowtie = false; // Set to true to include the additional bowtie
-bowtie_width_top = 28; // Top width of the bowtie in mm
-bowtie_width_bottom = 20; // Bottom width of the bowtie in mm
-bowtie_height = 12; // Height of the bowtie in mm
-bowtie_depth = 3; // Depth of the bowtie cutout in mm
+bowtie_width_top = 56; // Top width of the bowtie in mm
+bowtie_width_bottom = 40; // Bottom width of the bowtie in mm
+bowtie_height = 6; // Height of the bowtie in mm
 
 /* [Hidden] */
 // Define the dimensions of the cube
-cube_width = max(hole_diameter_mm + chamfer_width * 2 + 5, 25);
-cube_height = hole_diameter_mm + text_size*2+ chamfer_width*2+5;
-cube_depth = 6*25.4; // in mm
+cube_width = max(ceil((hole_diameter_mm + chamfer_width * 2 + 5) / (25.4 * 0.5)) * (25.4 * 0.5), 25.4); // Round up to nearest 0.5 inch in mm
+cube_height = hole_diameter_mm + text_size * 2 + chamfer_width * 2 + 5;
+cube_depth = 6 * 25.4; // in mm
 cube_size = [cube_width, cube_height, cube_depth];
 cube_center = [0, 0, 0];
 
@@ -154,60 +153,29 @@ module create_dovetail() {
                 ]);
 }
 
+// Define the bowtie polygon as a static variable
+bowtie_polygon = [
+    [-bowtie_width_top / 2, -bowtie_height / 2],
+    [bowtie_width_top / 2, -bowtie_height / 2],
+    [bowtie_width_bottom / 2, bowtie_height / 2],
+    [bowtie_width_top / 2, bowtie_height * 1.5],
+    [-bowtie_width_top / 2, bowtie_height * 1.5],
+    [-bowtie_width_bottom / 2, bowtie_height / 2]
+];
+
 // Add bowtie cutout
 module add_bowtie_cutout() {
-    translate([cube_width / 2 - bowtie_depth, cube_height/2-bowtie_height/2, 0])
+    translate([-cube_width/2, cube_height/2-bowtie_height/2, 0])
         rotate([90, 90, 90])
-            linear_extrude(height = bowtie_depth)
-                polygon(points=[
-                    [-bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_bottom / 2, bowtie_height / 2],
-                    [bowtie_width_top/2, bowtie_height*1.5],
-                    [-bowtie_width_top/2, bowtie_height*1.5],
-                    [-bowtie_width_bottom / 2, bowtie_height / 2]
-                ]); 
-                
-    translate([cube_width / 2 - bowtie_depth, -cube_height/2-bowtie_height/2, 0])
-        rotate([90, 90, 90])
-            linear_extrude(height = bowtie_depth)
-                polygon(points=[
-                    [-bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_bottom / 2, bowtie_height / 2],
-                    [bowtie_width_top/2, bowtie_height*1.5],
-                    [-bowtie_width_top/2, bowtie_height*1.5],
-                    [-bowtie_width_bottom / 2, bowtie_height / 2]
-                ]); 
-                
-    translate([-cube_width / 2 , cube_height/2-bowtie_height/2, 0])
-        rotate([90, 90, 90])
-            linear_extrude(height = bowtie_depth)
-                polygon(points=[
-                    [-bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_bottom / 2, bowtie_height / 2],
-                    [bowtie_width_top/2, bowtie_height*1.5],
-                    [-bowtie_width_top/2, bowtie_height*1.5],
-                    [-bowtie_width_bottom / 2, bowtie_height / 2]
-                ]); 
+            linear_extrude(height = cube_width)
+                polygon(points = bowtie_polygon);
                 
     translate([-cube_width / 2, -cube_height/2-bowtie_height/2, 0])
         rotate([90, 90, 90])
-            linear_extrude(height = bowtie_depth)
-                polygon(points=[
-                    [-bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_bottom / 2, bowtie_height / 2],
-                    [bowtie_width_top/2, bowtie_height*1.5],
-                    [-bowtie_width_top/2, bowtie_height*1.5],
-                    [-bowtie_width_bottom / 2, bowtie_height / 2]
-                ]);                  
-                
-
+            linear_extrude(height = cube_width)
+                polygon(points = bowtie_polygon);
+                             
 }
-
-
 
 // Combine the modules
 difference() {
@@ -222,14 +190,7 @@ difference() {
 
 // Add the additional bowtie if include_additional_bowtie is true
 if (include_additional_bowtie) {
-    translate([cube_width / 2 + 25, cube_height / 2 - bowtie_height / 2, 0])
-            linear_extrude(height = bowtie_depth)
-                polygon(points=[
-                    [-bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_top / 2, -bowtie_height / 2],
-                    [bowtie_width_bottom / 2, bowtie_height / 2],
-                    [bowtie_width_top / 2, bowtie_height * 1.5],
-                    [-bowtie_width_top / 2, bowtie_height * 1.5],
-                    [-bowtie_width_bottom / 2, bowtie_height / 2]
-                ]);
+    translate([cube_width / 2 + bowtie_width_top/2+ 5, 0, 0])
+        linear_extrude(height = cube_width)
+            polygon(points = bowtie_polygon);
 }
