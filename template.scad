@@ -16,10 +16,6 @@ plug_handle_length = 2.0123; // in inches
 // Plug overall length
 plug_overall_length = 3.0123; // in inches
 
-/* [Lip Parameters] */
-lip_size = 0.2; // in inches
-lip_threshold = 0.5; // in inches
-
 /* [Text Parameters] */
 text_thickness = 0.6; // height of the text in mm
 text_size = 6; // size of the text
@@ -27,52 +23,27 @@ text_font = "Arial Rounded MT Bold:style=Regular"; // specify the font
 use_input_text = false; // Set to true to use input text, false to use formula
 input_text_value = "Custom Text"; // Input text value
 
-// extra standoff length in inches
-holder_standoff_length = 1; // extra standoff length in inches
-
+/* [Other] */
+// Option to include the additional bowtie
+include_additional_bowtie = false; // Set to true to include the additional bowtie
+extend_top_height_inch = 2;
+extend_top_height = extend_top_height_inch * 25.4; // in mm
 hole_clearance = .075; // in inches
 // Define the diameter of the hole
 hole_diameter_mm = (plug_diameter + hole_clearance) * 25.4; // convert to mm
-extend_top_height_inch = 3;
-extend_top_height = extend_top_height_inch * 25.4; // in mm
+baseplate_angle = 38; // Define angle in degrees
 
-/* [Chamfer Parameters] */
+/* [Hidden] */
+// Lip Parameters
+lip_size = 0.2; // in inches
+lip_threshold = 0.5; // in inches
+
 // Define the chamfer parameters
 chamfer_width = 4; // 4 mm larger than the hole radius
 chamfer_angle = 45; // Chamfer angle in degrees
 chamfer_depth = chamfer_width * tan(chamfer_angle); // Depth of the chamfer in mm
 chamfer_r2 = (hole_diameter_mm / 2) + chamfer_width; // r2 is 4 mm larger than the hole radius
 
-/* [Magnet Parameters] */
-// Option to include the slot to the bottom of the cube
-include_slot = false; // Set to true to include the slot, false to exclude
-
-// Define the magnet size. Width, Thickness, Height
-Magnet_size_small = [25.4,6.35,25.4]; // bar magnet
-//Clearance for magnet (width, thickness, depth)
-magnet_clearance = [1,0,3]; //clearance for magnet
-mc = magnet_clearance;
-//Magnet distance from the edge
-edge_distance = 3; //distance from the edge
-
-/* [Interlock Parameters] */
-// Interlock hole size
-interlock_hole_size = 5; // in mm
-// User input for the number of holes and spacing
-num_holes = 6; // Number of holes
-hole_spacing = 22; // Spacing between holes in mm
-
-/* [Bowtie Parameters] */
-// Option to include the additional bowtie
-include_additional_bowtie = false; // Set to true to include the additional bowtie
-bowtie_width_top = 56; // Top width of the bowtie in mm
-bowtie_width_bottom = 40; // Bottom width of the bowtie in mm
-bowtie_height = 6; // Height of the bowtie in mm
-bowtie_offset = 29.21; // Offset of the bowtie in mm
-baseplate_angle = 35.69; // Define angle in degrees
-
-
-/* [Hidden] */
 // Define the dimensions of the cube
 cube_width = max(ceil((hole_diameter_mm + chamfer_width * 2 + 5) / (25.4 * 0.5)) * (25.4 * 0.5), 25.4); // Round up to nearest 0.5 inch in mm
 cube_height = ceil((hole_diameter_mm + text_size * 2 + chamfer_width * 2 + 5) / 25.4) * 25.4; // Round up to nearest inch in mm
@@ -80,7 +51,13 @@ cube_depth = 6 * 25.4; // in mm
 cube_size = [cube_width, cube_height, cube_depth];
 cube_center = [0, 0, 0];
 
-// Calculate bowtie height at the top
+
+bowtie_width_top = 30; // Top width of the bowtie in mm
+bowtie_width_bottom = 14; // Bottom width of the bowtie in mm
+bowtie_height = 6; // Height of the bowtie in mm
+bowtie_offset = 50; // Offset of the bowtie in mm
+bowtie_chamfer = 3; 
+
 bowtie_height_top = cube_height / tan(baseplate_angle);
 
 module create_cube_with_chamfered_hole_and_lip() {
@@ -96,12 +73,6 @@ module create_cube_with_chamfered_hole_and_lip() {
         // Create the cone for the chamfer
         translate([0, 0, cube_depth / 2 - chamfer_depth])
             cylinder(h = chamfer_depth, r1 = hole_diameter_mm / 2, r2 = chamfer_r2, center = false);
-
-        // Add the slot to the bottom of the cube if include_slot is true
-        if (include_slot) {
-            translate([0, -cube_height/2+Magnet_size_small[1]/2+edge_distance, -cube_depth/2+Magnet_size_small[2]/2+mc[2]/2-.01])
-                cube([Magnet_size_small[0]+mc[1],Magnet_size_small[1],Magnet_size_small[2]+mc[2]], center = true);
-        }
     }
     
     // Add the lip if plug_diameter is greater than 0.25 inches
@@ -118,15 +89,6 @@ module create_cube_with_chamfered_hole_and_lip() {
             translate([0, 0, -cube_depth / 2])
                 cylinder(h = cube_depth - (plug_overall_length - plug_handle_length+1) * 25.4, d = hole_diameter_mm - lip_size_mm);
         }
-    }
-}
-
-// Add the interlock hole
-module add_interlock_hole() {
-    for (i = [0 : num_holes - 1]) {
-        translate([0, 0, 20 - cube_depth / 2 + i * hole_spacing])
-            rotate([90, 0, 0])
-                cylinder(h = cube_height + 5, d = interlock_hole_size, center = true);
     }
 }
 
@@ -173,16 +135,24 @@ bowtie_polygon = [
 
 // Add bowtie cutout
 module add_bowtie_cutout() {
-    translate([-cube_width/2, cube_height/2-bowtie_height/2 , -cube_depth/2+bowtie_height_top])
+    translate([-cube_width / 2, cube_height / 2 - bowtie_height / 2, bowtie_offset - bowtie_height_top])
         rotate([90, 90, 90])
             linear_extrude(height = cube_width)
                 polygon(points = bowtie_polygon);
                 
-    translate([-cube_width / 2, -cube_height/2-bowtie_height/2, bowtie_offset])
+    translate([-cube_width / 2, -cube_height / 2 - bowtie_height / 2, bowtie_offset])
         rotate([90, 90, 90])
             linear_extrude(height = cube_width)
                 polygon(points = bowtie_polygon);
-                             
+
+    // Add cube cutout at the same location as both polygons
+     translate([0, cube_height / 2 , bowtie_offset - bowtie_height_top])
+        rotate([90, 90, 90])
+        cube([bowtie_width_bottom+bowtie_chamfer*2, bowtie_height*2,cube_width ], center = true);
+        
+     translate([0, -cube_height / 2 , bowtie_offset])
+        rotate([90, 90, 90])
+        cube([bowtie_width_bottom+bowtie_chamfer*2, bowtie_height*2,cube_width ], center = true);
 }
 
 // Extend the top of the cube
@@ -197,7 +167,6 @@ difference() {
         add_text_to_top();
         extend_top();
     }
-    add_interlock_hole();
     add_bowtie_cutout();
     //create_dovetail();
 }
