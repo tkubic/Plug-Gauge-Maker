@@ -81,7 +81,7 @@ def generate_stl(plug_diameter, plug_handle_length, plug_overall_length, output_
     openscad_path = r'C:\Program Files\OpenSCAD\openscad.exe'
 
     # Call OpenSCAD to generate the STL file
-    subprocess.run([openscad_path, '-o', output_file, temp_scad_file], check=True)
+    subprocess.run([openscad_path, '--backend=manifold', '-o', output_file, temp_scad_file], check=True)
 
     # Remove the temporary OpenSCAD file
     os.remove(temp_scad_file)
