@@ -24,6 +24,8 @@ use_input_text = false; // Set to true to use input text, false to use formula
 input_text_value = "Custom Text"; // Input text value
 
 /* [Other] */
+include_plug_gauge = true; // Set to false to exclude the plug gauge
+include_baseplate = false; // Set to true to include the baseplate
 // Option to include the additional bowtie
 include_additional_bowtie = false; // Set to true to include the additional bowtie
 extend_top_height_inch = 2;
@@ -35,7 +37,7 @@ baseplate_angle = 38; // Define angle in degrees
 
 /* [Hidden] */
 // Lip Parameters
-lip_size = 0.2; // in inches
+lip_size = 1.2; // in inches
 lip_threshold = 0.5; // in inches
 
 // Define the chamfer parameters
@@ -155,6 +157,89 @@ module add_bowtie_cutout() {
         cube([bowtie_width_bottom+bowtie_chamfer*2, bowtie_height*2,cube_width ], center = true);
 }
 
+// [Baseplate Bowtie Parameters]
+bowtie_tolerance = 0.1; // Tolerance for bowtie/dovetail fit (mm)
+baseplate_bowtie_chamfer = 3; // Chamfer size at the top of the dovetail (mm)
+
+// Module to create the dovetail/bowtie shape with offset applied
+module baseplate_bowtie() {
+    difference() {
+        translate([0, -bowtie_tolerance, 0])
+            linear_extrude(height = cube_depth) // Use cube_depth for extrusion height
+                offset(delta = -bowtie_tolerance)
+                    polygon(points = [
+                        [-(bowtie_width_bottom/2), 0],
+                        [(bowtie_width_bottom/2), 0],
+                        [(bowtie_width_top/2), bowtie_height],
+                        [-(bowtie_width_top/2), bowtie_height]
+                    ]);
+        // Cut a square at the top right edge
+        translate([bowtie_width_top/2 - baseplate_bowtie_chamfer, 0, 0])
+            linear_extrude(height = cube_depth)
+                square([bowtie_height, bowtie_height], center = false);
+        // Cut a square at the top left edge (mirrored on y axis)
+        translate([-(bowtie_width_top/2 - baseplate_bowtie_chamfer) - bowtie_height, 0, 0])
+            linear_extrude(height = cube_depth)
+                square([bowtie_height, bowtie_height], center = false);
+    }
+}
+
+// Module to create a right triangle baseplate with a subtracted square and attached bowtie/dovetail
+module baseplate_with_bowtie() {
+    // Calculate triangle points
+    a = 8 * 25.4 * cos(baseplate_angle); // triangle_hypotenuse = 8*25.4
+    b = 8 * 25.4 * sin(baseplate_angle);
+    dovetail_offset = 3*25.4+50; // cube depth / 2 +50mm
+    dir_x = cos(baseplate_angle);
+    dir_y = sin(baseplate_angle);
+    place_x = a - dovetail_offset * dir_x;
+    place_y = 0 + dovetail_offset * dir_y;
+    
+    // Combine baseplate and bowtie/dovetail
+    union() {
+        // Baseplate triangle with subtracted square
+        linear_extrude(height = cube_depth)
+            difference() {
+                polygon(points = [
+                    [0, 0],
+                    [a, 0],
+                    [0, b]
+                ]);
+                // Subtract a square starting at (a-50, 0) with height b
+                translate([a-50, 0, 0])
+                    square([50, b], center = false);
+            }
+        // Place and rotate the bowtie/dovetail
+        translate([place_x, place_y, 0])
+            rotate([0, 0, -baseplate_angle])
+                difference() {
+                    translate([0, -bowtie_tolerance, 0])
+                        linear_extrude(height = cube_depth)
+                            offset(delta = -bowtie_tolerance)
+                                polygon(points = [
+                                    [-(bowtie_width_bottom/2), 0],
+                                    [(bowtie_width_bottom/2), 0],
+                                    [(bowtie_width_top/2), bowtie_height],
+                                    [-(bowtie_width_top/2), bowtie_height]
+                                ]);
+                    // Cut a square at the top right edge
+                    translate([bowtie_width_top/2 - baseplate_bowtie_chamfer, 0, 0])
+                        linear_extrude(height = cube_depth)
+                            square([bowtie_height, bowtie_height], center = false);
+                    // Cut a square at the top left edge (mirrored on y axis)
+                    translate([-(bowtie_width_top/2 - baseplate_bowtie_chamfer) - bowtie_height, 0, 0])
+                        linear_extrude(height = cube_depth)
+                            square([bowtie_height, bowtie_height], center = false);
+                }
+    }
+}
+
+// Draw the combined baseplate and bowtie/dovetail as one object at the desired position, only if include_baseplate is true
+if (include_baseplate) {
+    translate([cube_width/2 + 50, 0, 0])
+        baseplate_with_bowtie();
+}
+
 // Extend the top of the cube
 module extend_top() {
     translate([-cube_width/2,  -cube_height/2 , cube_depth / 2])
@@ -163,12 +248,13 @@ module extend_top() {
 // Combine the modules
 difference() {
     union() {
-        create_cube_with_chamfered_hole_and_lip();
-        add_text_to_top();
-        extend_top();
+        if (include_plug_gauge) {
+            create_cube_with_chamfered_hole_and_lip();
+            add_text_to_top();
+            extend_top();
+        }
     }
     add_bowtie_cutout();
-    //create_dovetail();
 }
 
 // Add the additional bowtie if include_additional_bowtie is true
