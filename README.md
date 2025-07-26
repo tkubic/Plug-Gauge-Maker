@@ -13,7 +13,7 @@ To install and set up the project, follow these steps:
 
 2. This project uses python, navigate to python.org and install the latest version of python. Then install the required dependencies:
     ```sh
-    pip install pandas tk
+    pip install pandas tk openpyxl
     ```
 
 ## Usage
