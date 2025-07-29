@@ -2,17 +2,19 @@
 use <modules/module_gridfinity_cup.scad>;
 
 /* [General Settings] */
-width = 4; // .1 
-depth = 3; // .1
+width = 4; // .5 
+depth = 3; // .5
 height = 13; // .1
 
 chamfer_height_in = 0.08; // Chamfer height in inches
 chamfer_height_mm = chamfer_height_in * 25.4;
 
-/* [Hole Settings] */
-// Paste your hole_data from excel here
-// hole data format: [[x, y, diameter, depth], ...]
-hole_data = [[-1.7515,0,2.603,2.63],[0.65845,0.80845,1.2169,1.5],[0.65845,-0.80875,1.2175,1.5],[2.2753,0.80845,1.2168,1.5],[2.2753,-0.80875,1.2172,1.5]];
+/* [Shape Settings] */
+// Paste your shape_data from excel here
+// shape data format: [[x, y, width, height, depth], ...]
+// If height == 0, use circle (width = diameter). If height > 0, use square (width x height)
+shape_data = [[-1.75,0.0,2.6,0.0,1.32,],[-4.75,0.0,2.6,0.0,1.32,],[0.66,0.81,1.22,0.0,1.5,],[0.66,-0.81,1.22,0.0,1.5,],[2.28,0.81,1.22,0.0,1.5,],[2.28,-0.81,1.22,0.0,1.5,]];
+
 
 hole_shift = [0, 0]; // Shift holes by this amount in X and Y
 
@@ -60,25 +62,53 @@ text_2_text = "";
 text_size = 0;
 text_depth = 0.3;
 
-// Cylinder cutouts from hole_data string using BOSL2
 
-
-
-module cylinder_cutouts() {
-    for (i = [0 : len(hole_data)-1]) {
-        hole = hole_data[i];
-        xpos = hole[0]*25.4+ hole_shift[0];
-        ypos = hole[1]*25.4+ hole_shift[1];
-        diameter = hole[2]*25.4;
-        depth = hole[3]*25.4;
+// Cutouts from shape_data: circles or squares
+module shape_cutouts(shape_data, hole_shift, chamfer_height_mm, height, unit_scale=25.4) {
+    for (i = [0 : len(shape_data)-1]) {
+        shape = shape_data[i];
+        xpos = shape[0]*unit_scale + hole_shift[0];
+        ypos = shape[1]*unit_scale + hole_shift[1];
+        width = shape[2]*unit_scale;
+        height_val = shape[3]*unit_scale;
+        depth = shape[4]*unit_scale;
         zpos = height*7 - depth/2;
-        // Main cylinder
-        translate([xpos, ypos, zpos])
-            cylinder(h=depth, d=diameter, center=true);
-        // Chamfer (cone) at top edge
-        if (chamfer_height_mm > 0) {
-            translate([xpos, ypos, zpos + depth/2 - chamfer_height_mm/2])
-                cylinder(h=chamfer_height_mm, d1=diameter, d2=diameter + 2*chamfer_height_mm, center=true);
+        if (shape[3] == 0) {
+            // Circle
+            translate([xpos, ypos, zpos])
+                cylinder(h=depth, d=width, center=true);
+            // Chamfer (cone) at top edge
+            if (chamfer_height_mm > 0) {
+                translate([xpos, ypos, zpos + depth/2 - chamfer_height_mm/2])
+                    cylinder(h=chamfer_height_mm, d1=width, d2=width + 2*chamfer_height_mm, center=true);
+            }
+        } else {
+            // Square with chamfered top edge
+            translate([xpos, ypos, zpos - depth/2]) {
+                // Base extrusion
+                linear_extrude(height=depth)
+                    polygon([
+                        [-width/2, -height_val/2],
+                        [width/2, -height_val/2],
+                        [width/2, height_val/2],
+                        [-width/2, height_val/2]
+                    ]);
+                // Chamfer at top edge using minkowski
+                if (chamfer_height_mm > 0) {
+                    translate([0,0,depth])
+                        minkowski() {
+                            linear_extrude(height=0.01)
+                                polygon([
+                                    [-width/2, -height_val/2],
+                                    [width/2, -height_val/2],
+                                    [width/2, height_val/2],
+                                    [-width/2, height_val/2]
+                                ]);
+                            rotate_extrude(convexity=10)
+                                polygon([[0,0],[chamfer_height_mm,0],[0,-chamfer_height_mm]]);
+                        }
+                }
+            }
         }
     }
 }
@@ -86,7 +116,6 @@ module cylinder_cutouts() {
 
 // Main model: subtract cylinder from cup
 render(convexity = 2)
-// Main model: subtract cylinder from cup
 difference() {
     set_environment(
         width = width,
@@ -133,6 +162,6 @@ difference() {
             baseTextDepth = text_depth
         )
     );
-    // Subtract all holes
-    cylinder_cutouts();
+    // Subtract all shapes
+    shape_cutouts(shape_data, hole_shift, chamfer_height_mm, height);
 }
